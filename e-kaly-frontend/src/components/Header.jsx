@@ -20,7 +20,7 @@ export default function Header() {
               <button className="hidden py-2 font-semibold text-black transition-colors bg-yellow-400 rounded-full shadow md:inline-block hover:bg-yellow-500">
                 Commander
               </button>
-              <button className="font-semibold text-black">
+              <button className="font-semibold text-black bg-purple-400">
                 Se connecter
               </button>
             </div>
