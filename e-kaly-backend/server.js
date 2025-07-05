@@ -12,6 +12,10 @@ dotenv.config();
 // 4️⃣ Création de l'application Express (notre serveur)
 const app = express();
 
+//pour connecter la base de données aux images dans public/images
+app.use('/images', express.static('public/images'));
+
+
 // 5️⃣ Définition du port sur lequel le serveur va écouter
 //    On utilise la variable d'environnement PORT si elle existe, sinon 3001 par défaut
 const PORT = process.env.PORT || 3001;
