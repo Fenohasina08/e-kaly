@@ -1,12 +1,14 @@
- // On importe express pour créer un routeur modulaire
-const express = require('express');
-const router = express.Router();
+ // routes/platsRoutes.js
 
-// On importe la fonction getAllPlats depuis le controller
+const express = require('express');          // Import d’Express
+const router = express.Router();             // Création du routeur Express modulaire
+
+// Import de la fonction contrôleur qui gère la récupération des plats
 const { getAllPlats } = require('../controllers/platsController');
 
-// On associe la route GET '/' à la fonction getAllPlats
+// Association de la route GET '/' à la fonction getAllPlats
+// Cela signifie que les requêtes vers '/api/plats' seront traitées ici
 router.get('/', getAllPlats);
 
-// On exporte le routeur pour l'utiliser dans server.js
+// Export du routeur pour l’utiliser dans server.js
 module.exports = router;

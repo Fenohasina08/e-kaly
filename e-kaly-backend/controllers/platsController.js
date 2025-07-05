@@ -1,25 +1,42 @@
- // On importe le pool de connexion à PostgreSQL depuis le dossier models
-const pool = require('../models/db');
+ // controllers/platsController.js
 
-// Fonction asynchrone pour gérer la requête GET /api/plats
-const getAllPlats = async (req, res) => {
-  // Ce message s'affichera dans la console si la route est bien appelée
-  console.log('✅ Requête GET /api/plats reçue');
+// Importation du pool de connexion à la base PostgreSQL
+const pool = require('../models/db'); // Ajuste le chemin si besoin
+
+/**
+ * Fonction asynchrone pour récupérer tous les plats
+ * Possibilité de filtrer par catégorie via le paramètre de requête 'categorie'
+ * @param {*} req - Objet requête Express
+ * @param {*} res - Objet réponse Express
+ */
+async function getAllPlats(req, res) {
+  // Récupération du paramètre 'categorie' dans la query string (ex: ?categorie=Plats traditionnels)
+  const { categorie } = req.query;
 
   try {
-    // On exécute une requête SQL pour récupérer tous les plats et les trier par ID croissant
-    const result = await pool.query('SELECT * FROM plats ORDER BY id');
+    // Requête SQL de base pour récupérer tous les plats
+    let query = 'SELECT * FROM plats';
+    const params = []; // Tableau pour stocker les paramètres de la requête sécurisée
 
-    // Si la requête réussit, on renvoie le tableau des plats au format JSON
+    // Si la catégorie est précisée, on ajoute une condition WHERE
+    if (categorie) {
+      query += ' WHERE categorie = $1'; // $1 est un placeholder pour la valeur sécurisée
+      params.push(categorie);           // On ajoute la catégorie dans les paramètres
+    }
+
+    // Exécution de la requête avec ou sans filtre
+    const result = await pool.query(query, params);
+
+    // Envoi du résultat au frontend sous forme JSON
     res.json(result.rows);
-  } catch (err) {
-    // En cas d'erreur SQL ou de connexion, on affiche un message dans la console
-    console.error('❌ Erreur récupération plats :', err.message);
+  } catch (error) {
+    // En cas d’erreur, log dans la console serveur
+    console.error('Erreur lors de la récupération des plats :', error);
 
-    // On envoie une réponse d’erreur HTTP 500 (erreur serveur)
-    res.status(500).json({ error: 'Erreur serveur' });
+    // Envoi d’une réponse d’erreur 500 au client
+    res.status(500).json({ error: 'Erreur serveur lors de la récupération des plats.' });
   }
-};
+}
 
-// On exporte la fonction pour pouvoir l’utiliser dans les routes
+// Export de la fonction pour être utilisée dans les routes
 module.exports = { getAllPlats };
