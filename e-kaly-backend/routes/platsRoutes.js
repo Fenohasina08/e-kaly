@@ -1,14 +1,12 @@
- const express = require('express');
+ // On importe express pour créer un routeur modulaire
+const express = require('express');
 const router = express.Router();
 
-// Route GET sur /api/plats
-router.get('/', (req, res) => {
-  console.log('✅ Route /api/plats appelée');
-  const plats = [
-    { id: 1, nom: 'Pizza Margherita', prix: 8.5 },
-    { id: 2, nom: 'Pâtes Carbonara', prix: 9.0 },
-  ];
-  res.json(plats);
-});
+// On importe la fonction getAllPlats depuis le controller
+const { getAllPlats } = require('../controllers/platsController');
 
+// On associe la route GET '/' à la fonction getAllPlats
+router.get('/', getAllPlats);
+
+// On exporte le routeur pour l'utiliser dans server.js
 module.exports = router;
