@@ -1,22 +1,25 @@
-import React from "react";
+ import React from "react";
+import Etudiant from "../../public/images/student.jpg";
+import Man from "../../public/images/man.jpg";
+import Femme from "../../public/images/filles.jpg";
 
 const avis = [
   {
     nom: "Rija Andrianarisoa",
     message: "Le service est rapide, les plats sont toujours chauds et délicieux. Je recommande vivement !",
-    avatar: "/images/avatar1.jpg",
+    avatar: Etudiant,
     note: 5,
   },
   {
     nom: "Fanja Raharison",
-    message: "J'adore la variété des menus ! C’est devenu mon site préféré pour commander le déjeuner.",
-    avatar: "/images/avatar2.jpg",
+    message: "J'adore la variété des menus ! C'est devenu mon site préféré pour commander le déjeuner.",
+    avatar: Femme,
     note: 4,
   },
   {
     nom: "Tojo Rakoto",
     message: "Simple, rapide et efficace. Les livreurs sont aussi très polis. Bravo e-Kaly !",
-    avatar: "/images/avatar3.jpg",
+    avatar: Man,
     note: 5,
   },
 ];
@@ -31,7 +34,7 @@ export default function Temoignages() {
           Des centaines de clients ont déjà fait confiance à e-Kaly pour leurs repas quotidiens.
         </p>
         <p className="mt-1 text-lg text-gray-600">
-          Et si vous goûtiez la différence aujourd’hui ?
+          Et si vous goûtiez la différence aujourd'hui ?
         </p>
       </div>
 
@@ -62,7 +65,7 @@ export default function Temoignages() {
             </div>
 
             {/* Message */}
-            <p className="italic text-gray-600">“{client.message}”</p>
+            <p className="italic text-gray-600">"{client.message}"</p>
           </div>
         ))}
       </div>
