@@ -1,9 +1,9 @@
   import React from 'react'
-
+import { Link } from 'react-router-dom'
 export default function Header() {
   return (
-      <header className="fixed top-0 left-0 z-50 flex flex-col w-screen h-[1%] font-sans bg-gray-50 p-0">
-        <nav className="p-4 bg-white border-b border-gray-200 shadow-sm">
+      <header className="fixed top-0 left-0 z-50 flex flex-col w-screen h-[1%] font-sans bg-gray-50 p-0 ">
+        <nav className="flex flex-col gap-2 p-4 bg-white border-b border-gray-200 shadow-sm md:flex ">
           <div className="flex items-center justify-between w-[98vw]">
             {/* Logo */}
             <h1 className="text-2xl font-bold text-black ">e‑Kaly</h1>
@@ -17,12 +17,17 @@ export default function Header() {
 
             {/* Boutons */}
             <div className="flex flex-row gap-4 ml-20 ">
-              <button className="hidden py-2 font-semibold text-black transition-colors bg-yellow-400 rounded-full shadow md:inline-block hover:bg-yellow-500">
-                Commander
-              </button>
-              <button className="font-semibold text-black bg-purple-400">
-                Se connecter
-              </button>
+              <Link to="./Commander">
+                 <button className="hidden py-2 font-semibold text-black transition-colors bg-yellow-400 rounded-full shadow md:inline-block hover:bg-yellow-500">
+                  Commander
+                </button>
+              </Link>
+               <Link to = './Connecter'>
+                <button className="font-semibold text-black bg-purple-400">
+                  Se connecter
+                </button>
+               </Link>
+               
             </div>
           </div>
         </nav>
