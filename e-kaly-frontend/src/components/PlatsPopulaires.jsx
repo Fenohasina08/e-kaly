@@ -1,34 +1,29 @@
  import React from "react";
-import Romazava from "../../public/images/romazava.jpeg";
-import Poulet from "../../public/images/pouletcoco.jpg";
-import Brochettes from "../../public/images/brochettedezebu.jpg";
-import Mofoanana from "../../public/images/mofoanana.jpg";
-import Koba from "../../public/images/koba.webp";
 
 const platsPopulaires = [
   {
     nom: "Romazava",
-    image: Romazava,
+    image: "/images/romazava.jpeg", // ✅ Chemin direct
     categorie: "Plats traditionnels",
   },
   {
     nom: "Poulet coco",
-    image: Poulet,
+    image: "/images/pouletcoco.jpg",
     categorie: "Viandes",
   },
   {
     nom: "Brochettes de zébu",
-    image: Brochettes,
+    image: "/images/brochettedezebu.jpg",
     categorie: "Street-food",
   },
   {
     nom: "Mofo anana",
-    image: Mofoanana,
+    image: "/images/mofoanana.jpg",
     categorie: "Végétarien",
   },
   {
     nom: "Koba",
-    image: Koba,
+    image: "/images/koba.webp",
     categorie: "Desserts",
   },
 ];

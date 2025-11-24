@@ -37,15 +37,6 @@ export default function Hero() {
           Rechercher
         </button>
       </form>
-
-      <div className="flex justify-center gap-4">
-        <button className="px-6 py-3 font-semibold text-black transition-transform transform bg-yellow-400 rounded-full shadow-md hover:bg-yellow-500 hover:scale-105">
-          Recettes disponibles
-        </button>
-        <button className="px-6 py-3 font-semibold text-white transition-transform transform bg-green-600 rounded-full shadow-md hover:bg-green-700 hover:scale-105">
-          Commander en ligne
-        </button>
-      </div>
     </div>
   </div>
 </div>
