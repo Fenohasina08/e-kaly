@@ -43,7 +43,7 @@ export default function Temoignages() {
         {avis.map((client, index) => (
           <div
             key={index}
-            className="p-6 text-center transition bg-white shadow-lg rounded-xl hover:shadow-xl"
+            className="p-6 text-center transition shadow-lg bg-blue rounded-xl hover:shadow-xl"
           >
             {/* Avatar en bulle */}
             <div className="w-20 h-20 mx-auto mb-4 overflow-hidden border-4 border-yellow-400 rounded-full">

@@ -28,6 +28,7 @@ app.use(express.json());      // Permet à Express de parser le corps des requê
 //    Toute requête commençant par "/api/plats" sera gérée par le routeur platsRoutes
 app.use('/api/plats', platsRoutes);
 
+
 // 8️⃣ Démarrage du serveur sur le port défini
 app.listen(PORT, () => {
   console.log(`✅ Serveur backend démarré sur http://localhost:${PORT}`);
