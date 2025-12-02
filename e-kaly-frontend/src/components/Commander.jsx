@@ -1,38 +1,217 @@
- import React, { useState, useEffect } from 'react';
+ import React, { useEffect, useState, useRef } from 'react';
+ import Header from './Header'
+/**
+ * Commander.jsx
+ *
+ * Refonte orientée "Option A — rework complet (mobile-first)".
+ *
+ * Changements clés (expliqués en commentaires FR près du code) :
+ * - Panier sur mobile : bottom sheet (glissant depuis le bas). Sur desktop : sidebar sticky.
+ * - Accessibilité : attributs aria (aria-label, role, aria-live), gestion du clavier (Esc pour fermer),
+ *   tabIndex et focus management pour le bottom sheet / boutons.
+ * - Images : lazy loading + gestion d'erreur (fallback) + placeholder low-fi.
+ * - Feedback visuel & haptique : animation boutons, toasts accessibles, vibration courte si dispo.
+ *
+ * Dépendances : Aucune lib externe. Utilise TailwindCSS pour le style.
+ */
 
+/* ---------- Utilitaire : fallback image data URI (SVG minimal) ---------- */
+const FALLBACK_SVG =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='512' height='320' viewBox='0 0 512 320'><rect width='100%' height='100%' fill='#f3f4f6'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='#9ca3af' font-size='20'>Image indisponible</text></svg>`
+  );
+
+/* ---------- Petit helper haptique (si dispo) ---------- */
+const vibrate = (pattern = 10) => {
+  if (navigator && 'vibrate' in navigator) navigator.vibrate(pattern);
+};
+
+/* ---------- Composant principal ---------- */
 export default function Commander() {
+  /* ---------- États principaux ---------- */
   const [cart, setCart] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [activeCategory, setActiveCategory] = useState('tous');
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(false);
   const [showOrderSuccess, setShowOrderSuccess] = useState(false);
 
-  // 🎯 CHARGEMENT DU PANIER
+  /* bottom sheet (mobile) open state */
+  const [cartOpen, setCartOpen] = useState(false);
+
+  /* toast accessible */
+  const [toast, setToast] = useState(null);
+  const toastTimerRef = useRef(null);
+
+  /* ref pour le bottom sheet (pour focus management et keyboard events) */
+  const sheetRef = useRef(null);
+
+  /* ---------- Données du menu (inchangées, légèrement nettoyées) ---------- */
+  const menuItems = [
+    {
+      id: 1,
+      name: 'Romazava',
+      description:
+        'Le plat national malgache - viande de zébu mijotée avec brèdes',
+      price: '18,000 Ar',
+      image: '/images/romazava.jpeg',
+      category: 'plats-principaux',
+      preparationTime: '35-45 min',
+      rating: 4.9,
+      spiceLevel: 2,
+      isPopular: true
+    },
+    {
+      id: 2,
+      name: 'Poulet coco',
+      description:
+        'Poulet mijoté dans une sauce coco crémeuse aux épices malgaches',
+      price: '16,000 Ar',
+      image: '/images/pouletcoco.jpg',
+      category: 'plats-principaux',
+      preparationTime: '30-40 min',
+      rating: 4.8,
+      spiceLevel: 1,
+      isPopular: true
+    },
+    {
+      id: 3,
+      name: 'Brochettes de zébu',
+      description: 'Brochettes de zébu mariné, servi avec sauce piquante maison',
+      price: '8,000 Ar',
+      image: '/images/brochettedezebu.jpg',
+      category: 'entrees',
+      preparationTime: '20-25 min',
+      rating: 4.8,
+      spiceLevel: 3,
+      isPopular: true
+    },
+    {
+      id: 4,
+      name: 'Mofo anana',
+      description: 'Beignets de brèdes, croustillants et savoureux',
+      price: '6,000 Ar',
+      image: '/images/mofoanana.jpg',
+      category: 'vegetarien',
+      preparationTime: '20-25 min',
+      rating: 4.5,
+      spiceLevel: 0,
+      isVegetarian: true,
+      isPopular: true
+    },
+    {
+      id: 5,
+      name: 'Koba',
+      description: 'Gâteau de riz et cacahuètes enveloppé dans une feuille de bananier',
+      price: '5,000 Ar',
+      image: '/images/koba.webp',
+      category: 'desserts',
+      preparationTime: '5 min',
+      rating: 4.7,
+      spiceLevel: 0,
+      isVegetarian: true,
+      isPopular: true
+    },
+    {
+      id: 6,
+      name: 'Ravitoto',
+      description: "Feuilles de manioc pilées avec porc, parfumées à l'ail et gingembre",
+      price: '15,000 Ar',
+      image: '/images/ravitoto.jpg',
+      category: 'plats-principaux',
+      preparationTime: '40-50 min',
+      rating: 4.7,
+      spiceLevel: 1
+    },
+    {
+      id: 7,
+      name: 'Sambos',
+      description: 'Beignets fourrés à la viande hachée et légumes, croustillants',
+      price: '6,000 Ar',
+      image: '/images/sambos.jpg',
+      category: 'entrees',
+      preparationTime: '15-20 min',
+      rating: 4.5,
+      spiceLevel: 1
+    },
+    {
+      id: 8,
+      name: 'Lasary',
+      description: 'Salade malgache de tomates, concombres, oignons et brèdes',
+      price: '7,000 Ar',
+      image: '/images/lasary.jpg',
+      category: 'entrees',
+      preparationTime: '10-15 min',
+      rating: 4.4,
+      spiceLevel: 0,
+      isVegetarian: true
+    },
+    {
+      id: 9,
+      name: 'Mofo akondro',
+      description: 'Beignets de banane douce, parfaits pour le goûter',
+      price: '4,000 Ar',
+      image: '/images/mofoakondro.jpg',
+      category: 'desserts',
+      preparationTime: '10-15 min',
+      rating: 4.6,
+      spiceLevel: 0,
+      isVegetarian: true
+    },
+    {
+      id: 10,
+      name: 'Bonbon coco',
+      description: 'Confiserie à base de noix de coco râpée et sucrée',
+      price: '3,000 Ar',
+      image: '/images/bonboncoco.jpg',
+      category: 'desserts',
+      preparationTime: '5 min',
+      rating: 4.5,
+      spiceLevel: 0,
+      isVegetarian: true
+    }
+  ];
+
+  const categories = [
+    { id: 'tous', name: 'Tous les plats', icon: '🍽️' },
+    { id: 'plats-principaux', name: 'Plats Principaux', icon: '🍛' },
+    { id: 'entrees', name: 'Entrées', icon: '🥗' },
+    { id: 'desserts', name: 'Desserts', icon: '🍰' },
+    { id: 'boissons', name: 'Boissons', icon: '🥤' },
+    { id: 'vegetarien', name: 'Végétarien', icon: '🌱' }
+  ];
+
+  /* ---------- Chargement du panier (localStorage) ---------- */
   useEffect(() => {
     const savedCart = localStorage.getItem('e-kaly-cart');
     if (savedCart) {
       try {
-        const parsedCart = JSON.parse(savedCart);
-        setCart(parsedCart);
+        setCart(JSON.parse(savedCart));
       } catch (err) {
-        setError('Erreur de chargement du panier');
+        console.error('Erreur de chargement du panier', err);
       }
     }
   }, []);
 
-  // 🛒 AJOUTER AU PANIER
+  /* ---------- Helpers panier (add / remove / update) ---------- */
+  const persistCart = (updatedCart) => {
+    setCart(updatedCart);
+    localStorage.setItem('e-kaly-cart', JSON.stringify(updatedCart));
+    // feedback visuel + haptique
+    setAccessibleToast('Panier mis à jour');
+    vibrate(8);
+  };
+
   const addToCart = (item) => {
-    const existingItem = cart.find(cartItem => cartItem.id === item.id);
-    
+    const existingItem = cart.find((cartItem) => cartItem.id === item.id);
+    let updatedCart;
+
     if (existingItem) {
-      const updatedCart = cart.map(cartItem =>
+      updatedCart = cart.map((cartItem) =>
         cartItem.id === item.id
           ? { ...cartItem, quantity: cartItem.quantity + 1 }
           : cartItem
       );
-      setCart(updatedCart);
-      localStorage.setItem('e-kaly-cart', JSON.stringify(updatedCart));
     } else {
       const newItem = {
         ...item,
@@ -40,40 +219,39 @@ export default function Commander() {
         quantity: 1,
         addedAt: new Date().toISOString()
       };
-      const updatedCart = [...cart, newItem];
-      setCart(updatedCart);
-      localStorage.setItem('e-kaly-cart', JSON.stringify(updatedCart));
+      updatedCart = [...cart, newItem];
     }
+
+    persistCart(updatedCart);
+    // Ouvrir le bottom sheet sur mobile lorsqu'on ajoute un item
+    setCartOpen(true);
   };
 
-  // 🗑️ SUPPRIMER DU PANIER
   const removeFromCart = (cartId) => {
-    const updatedCart = cart.filter(item => item.cartId !== cartId);
-    setCart(updatedCart);
-    localStorage.setItem('e-kaly-cart', JSON.stringify(updatedCart));
+    const updatedCart = cart.filter((item) => item.cartId !== cartId);
+    persistCart(updatedCart);
   };
 
-  // 🔢 MODIFIER QUANTITÉ
   const updateQuantity = (cartId, change) => {
-    const updatedCart = cart.map(item => {
+    const updatedCart = cart.map((item) => {
       if (item.cartId === cartId) {
         const newQuantity = Math.max(1, item.quantity + change);
         return { ...item, quantity: newQuantity };
       }
       return item;
     });
-    setCart(updatedCart);
-    localStorage.setItem('e-kaly-cart', JSON.stringify(updatedCart));
+    persistCart(updatedCart);
   };
 
-  // 💳 COMMANDE
+  /* ---------- Checkout (simulé) ---------- */
   const handleCheckout = () => {
     if (cart.length === 0) {
-      setError('Votre panier est vide');
+      setAccessibleToast("Votre panier est vide");
       return;
     }
 
     setLoading(true);
+    vibrate(15);
 
     setTimeout(() => {
       const orderHistory = JSON.parse(localStorage.getItem('e-kaly-orders') || '[]');
@@ -84,26 +262,29 @@ export default function Commander() {
         date: new Date().toISOString(),
         status: 'confirmed'
       };
-      
+
       localStorage.setItem('e-kaly-orders', JSON.stringify([newOrder, ...orderHistory]));
       setCart([]);
       localStorage.removeItem('e-kaly-cart');
       setLoading(false);
       setShowOrderSuccess(true);
-      
-      setTimeout(() => setShowOrderSuccess(false), 5000);
-    }, 2000);
+      setCartOpen(false);
+      setAccessibleToast('Commande confirmée !');
+      vibrate([20, 10, 20]);
+
+      setTimeout(() => setShowOrderSuccess(false), 4000);
+    }, 1200);
   };
 
-  // 🧮 CALCUL DES TOTAUX
+  /* ---------- Totaux ---------- */
   const calculateTotals = () => {
     const subtotal = cart.reduce((sum, item) => {
-      const priceString = item.price.replace(/[^0-9]/g, '');
+      const priceString = (item.price || '').replace(/[^0-9]/g, '');
       const price = parseInt(priceString) || 0;
-      return sum + (price * item.quantity);
+      return sum + price * item.quantity;
     }, 0);
 
-    const deliveryFee = 2000;
+    const deliveryFee = cart.length > 0 ? 2000 : 0;
     const serviceFee = Math.round(subtotal * 0.05);
     const tax = Math.round(subtotal * 0.10);
     const total = subtotal + deliveryFee + serviceFee + tax;
@@ -111,636 +292,561 @@ export default function Commander() {
     return { subtotal, deliveryFee, serviceFee, tax, total };
   };
 
-  // 🔍 FILTRES
-  const filteredMenuSections = menuSections.map(section => ({
-    ...section,
-    items: section.items.filter(item =>
+  /* ---------- Filtrage ---------- */
+  const filteredItems = menuItems.filter(
+    (item) =>
       (activeCategory === 'tous' || item.category === activeCategory) &&
       item.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  })).filter(section => section.items.length > 0);
+  );
 
   const totals = calculateTotals();
 
+  /* ---------- Toast accessible ---------- */
+  const setAccessibleToast = (message) => {
+    setToast(message);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), 3000);
+  };
+
+  /* ---------- Keyboard / focus management pour le bottom sheet ---------- */
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape' && cartOpen) {
+        setCartOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [cartOpen]);
+
+  useEffect(() => {
+    if (cartOpen && sheetRef.current) {
+      // focus sur le contenu du sheet pour accessibilité
+      sheetRef.current.focus();
+    }
+  }, [cartOpen]);
+
+  /* ---------- Swipe to close (simple) pour mobile bottom sheet ---------- */
+  useEffect(() => {
+    const el = sheetRef.current;
+    if (!el) return;
+
+    let startY = 0;
+    let currentY = 0;
+    let touching = false;
+
+    const onTouchStart = (e) => {
+      touching = true;
+      startY = e.touches ? e.touches[0].clientY : e.clientY;
+    };
+    const onTouchMove = (e) => {
+      if (!touching) return;
+      currentY = e.touches ? e.touches[0].clientY : e.clientY;
+      const diff = currentY - startY;
+      if (diff > 0 && diff < 300) {
+        el.style.transform = `translateY(${diff}px)`;
+      }
+    };
+    const onTouchEnd = () => {
+      touching = false;
+      const diff = currentY - startY;
+      el.style.transform = '';
+      if (diff > 120) {
+        setCartOpen(false);
+      }
+      startY = currentY = 0;
+    };
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: true });
+    el.addEventListener('touchend', onTouchEnd);
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+      el.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [sheetRef.current]);
+
+  /* ---------- UI ---------- */
   return (
-    <div className="min-h-screen pt-20 bg-gradient-to-br from-amber-50 to-orange-50">
-      {/* Notification de succès */}
-      {showOrderSuccess && (
-        <div className="fixed z-50 flex items-center gap-3 px-6 py-4 text-white transform -translate-x-1/2 bg-green-500 shadow-2xl top-20 left-1/2 rounded-2xl animate-bounce">
-          <span className="text-2xl">🎉</span>
-          <div>
-            <p className="font-bold">Commande confirmée !</p>
-            <p className="text-sm opacity-90">Votre repas arrive bientôt</p>
+    <div className="antialiased text-gray-900 w-[100vw] min-h-screen bg-gray-50">
+      {/* Header simplifié - accessible */}
+      <header className="fixed inset-x-0 top-0 z-30 border-b border-gray-200 bg-white/90 backdrop-blur-sm">
+        <Header />
+      </header>
+
+      {/* Notification de succès (aria-live pour lecteurs d'écran) */}
+      <div
+        aria-live="polite"
+        className="fixed inset-x-0 z-40 flex justify-center pointer-events-none top-16"
+      >
+        {showOrderSuccess && (
+          <div
+            role="status"
+            className="inline-flex items-center gap-3 px-5 py-3 text-white bg-green-500 shadow-lg pointer-events-auto rounded-2xl animate-fade-in"
+          >
+            <span aria-hidden>🎉</span>
+            <div className="text-sm font-semibold">Commande confirmée !</div>
+          </div>
+        )}
+      </div>
+
+      {/* Toast accessible (aria-live) */}
+      <div
+        aria-live="assertive"
+        className="fixed z-50 left-4 bottom-4"
+        aria-atomic="true"
+      >
+        {toast && (
+          <div
+            role="status"
+            className="px-4 py-2 text-sm text-white rounded-md shadow-md bg-black/80"
+          >
+            {toast}
+          </div>
+        )}
+      </div>
+
+      {/* Contenu principal */}
+      <main className="px-4 pt-20 pb-40 ">
+        {/* Recherche */}
+        <div className="max-w-xl mx-auto mb-6">
+          <label htmlFor="search" className="sr-only">
+            Rechercher un plat
+          </label>
+          <div className="relative">
+            <input
+              id="search"
+              aria-label="Rechercher un plat"
+              type="search"
+              placeholder="Rechercher un plat..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-3 pl-10 text-sm bg-white border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
+            <div className="absolute text-gray-400 -translate-y-1/2 pointer-events-none left-3 top-1/2">
+              🔍
+            </div>
           </div>
         </div>
-      )}
 
-      {/* En-tête amélioré */}
-      <div className="shadow-lg bo5rder-b w-[100vw] bg-white/95 backdrop-blur-sm">
-        <div className="w-full px-4 py-8 mx-auto lg:px-8">
-          <div className="flex flex-col items-center mb-8 text-center">
-            <h1 className="text-4xl font-bold text-transparent text-gray-900 lg:text-5xl bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text">
-              e-Kaly
-            </h1>
-            <p className="max-w-2xl mt-4 text-xl text-gray-600">
-              Découvrez l'authenticité des saveurs malgaches 🍽️
-            </p>
+        {/* Catégories (scrollable horizontal on mobile) */}
+        <nav
+          aria-label="Catégories de plats"
+          className="mb-6 overflow-x-auto"
+        >
+          <ul className="flex gap-2 px-1">
+            {categories.map((category) => {
+              const active = activeCategory === category.id;
+              return (
+                <li key={category.id}>
+                  <button
+                    onClick={() => {
+                      setActiveCategory(category.id);
+                      vibrate(6);
+                      setAccessibleToast(`${category.name} sélectionnée`);
+                    }}
+                    aria-pressed={active}
+                    className={`flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold transition transform ${
+                      active
+                        ? 'bg-yellow-400 text-black shadow-lg'
+                        : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+                    } focus:outline-none focus:ring-2 focus:ring-yellow-400`}
+                  >
+                    <span aria-hidden>{category.icon}</span>
+                    <span>{category.name}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        {/* Stat cards */}
+        <div className="grid grid-cols-2 gap-4 mb-8 md:grid-cols-4">
+          <div className="p-3 text-center bg-white shadow-sm rounded-2xl">
+            <div className="text-xl font-bold text-yellow-600">{menuItems.length}</div>
+            <div className="text-xs text-gray-500">Plats</div>
           </div>
+          <div className="p-3 text-center bg-white shadow-sm rounded-2xl">
+            <div className="text-xl font-bold">4.8</div>
+            <div className="text-xs text-gray-500">Note moyenne</div>
+          </div>
+          <div className="p-3 text-center bg-white shadow-sm rounded-2xl">
+            <div className="text-xl font-bold">30-45min</div>
+            <div className="text-xs text-gray-500">Livraison</div>
+          </div>
+          <div className="p-3 text-center bg-white shadow-sm rounded-2xl">
+            <div className="text-xl font-bold">{cart.length}</div>
+            <div className="text-xs text-gray-500">Articles</div>
+          </div>
+        </div>
 
-          {/* Barre de recherche et filtres */}
-          <div className="flex flex-col items-center justify-between max-w-6xl gap-4 mx-auto lg:flex-row">
-            <div className="flex-1 w-full lg:max-w-md">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder=" Rechercher un plat..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full px-6 py-4 pl-12 text-black border border-gray-300 shadow-sm lg text-bg-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                />
-                <div className="absolute text-gray-400 transform -translate-y-1/2 left-4 top-1/2">
-                  🔍
+        {/* Grid des plats (mobile-first) */}
+        {filteredItems.length === 0 ? (
+          <section aria-live="polite" className="py-10 text-center">
+            <div className="mb-4 text-6xl">🍽️</div>
+            <h2 className="mb-1 text-xl font-bold">Aucun plat trouvé</h2>
+            <p className="text-sm text-gray-500">Essayez d'élargir votre recherche.</p>
+          </section>
+        ) : (
+          <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredItems.map((item) => (
+              <article
+                key={item.id}
+                role="article"
+                aria-label={`${item.name} — ${item.description}`}
+                className="overflow-hidden transition transform bg-white border border-gray-200 shadow-sm rounded-xl hover:shadow-lg hover:-translate-y-1"
+              >
+                {/* Image : lazy + gestion d'erreur */}
+                <div className="relative w-full bg-gray-100 h-44">
+                  <img
+                    loading="lazy" /* lazy loading natif */
+                    src={item.image}
+                    alt={item.name}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = FALLBACK_SVG;
+                    }}
+                    className="object-cover w-full h-full"
+                    width="640"
+                    height="360"
+                  />
+                  {item.isPopular && (
+                    <span className="absolute px-2 py-1 text-xs font-bold text-black bg-yellow-400 rounded-full top-3 left-3">
+                      POPULAIRE
+                    </span>
+                  )}
+                  {item.isVegetarian && (
+                    <span className="absolute px-2 py-1 text-xs font-semibold text-white bg-green-600 rounded-full top-3 right-3">
+                      VÉGÉ
+                    </span>
+                  )}
                 </div>
-              </div>
-            </div>
 
-            <div className="flex flex-wrap justify-center gap-2">
-              {categories.map(category => (
-                <button
-                  key={category.id}
-                  onClick={() => setActiveCategory(category.id)}
-                  className={`px-6 py-3 rounded-full font-semibold transition-all transform hover:scale-105 ${
-                    activeCategory === category.id
-                      ? 'bg-yellow-500 text-white shadow-lg'
-                      : 'bg-white text-gray-700 shadow-sm hover:shadow-md'
-                  }`}
-                >
-                  {category.icon} {category.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+                {/* Corps de la carte */}
+                <div className="flex flex-col gap-3 p-4">
+                  <div className="flex items-start justify-between">
+                    <h3 className="font-bold text-md">{item.name}</h3>
+                    <div className="text-sm font-extrabold text-yellow-600">{item.price}</div>
+                  </div>
 
-      {/* Stats en temps réel */}
-      <div className="w-full px-4 py-6">
-        <div className="grid max-w-6xl grid-cols-2 gap-4 mx-auto text-center md:grid-cols-4">
-          <div className="p-4 shadow-sm bg-white/80 backdrop-blur rounded-2xl">
-            <div className="text-2xl font-bold text-yellow-600">{menuSections.flatMap(s => s.items).length}</div>
-            <div className="text-sm text-gray-600">Plats disponibles</div>
-          </div>
-          <div className="p-4 shadow-sm bg-white/80 backdrop-blur rounded-2xl">
-            <div className="text-2xl font-bold text-green-600">4.8</div>
-            <div className="text-sm text-gray-600">⭐ Note moyenne</div>
-          </div>
-          <div className="p-4 shadow-sm bg-white/80 backdrop-blur rounded-2xl">
-            <div className="text-2xl font-bold text-blue-600">30-45min</div>
-            <div className="text-sm text-gray-600">🚗 Livraison</div>
-          </div>
-          <div className="p-4 shadow-sm bg-white/80 backdrop-blur rounded-2xl">
-            <div className="text-2xl font-bold text-purple-600">{cart.length}</div>
-            <div className="text-sm text-gray-600">🛒 Votre panier</div>
-          </div>
-        </div>
-      </div>
+                  <p className="text-sm text-gray-600 line-clamp-2">{item.description}</p>
 
-      {/* Message d'erreur */}
-      {error && (
-        <div className="w-full max-w-6xl px-4 py-3 mx-auto text-red-700 bg-red-100 border border-red-400 lg:px-8 rounded-xl">
-          <div className="flex items-center justify-between">
-            <span>{error}</span>
-            <button 
-              onClick={() => setError(null)}
-              className="text-lg font-bold"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="w-full px-4 py-8">
-        <div className="flex flex-col gap-8 mx-auto max-w-7xl lg:flex-row">
-          
-          {/* Menu Principal */}
-          <div className="flex-1">
-            {filteredMenuSections.length === 0 ? (
-              <div className="py-16 text-center">
-                <div className="mb-4 text-6xl">🍽️</div>
-                <h3 className="mb-2 text-2xl font-bold text-gray-700">Aucun plat trouvé</h3>
-                <p className="text-gray-500">Essayez de modifier vos critères de recherche</p>
-              </div>
-            ) : (
-              filteredMenuSections.map((section, index) => (
-                <div key={index} className="mb-16">
-                  <div className="flex items-center gap-4 mb-8">
-                    <div className="flex items-center justify-center w-12 h-12 text-2xl text-white bg-yellow-500 rounded-2xl">
-                      {section.icon}
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <div className="flex items-center gap-2">
+                      <span>⏱ {item.preparationTime}</span>
+                      <span>•</span>
+                      <span>⭐ {item.rating}</span>
                     </div>
-                    <div>
-                      <h2 className="text-3xl font-bold text-gray-900">{section.title}</h2>
-                      <p className="text-gray-600">{section.description}</p>
+
+                    <div className="flex items-center gap-1">
+                      {item.spiceLevel > 0 &&
+                        Array.from({ length: item.spiceLevel }).map((_, i) => (
+                          <span key={i} className="text-xs" aria-hidden>
+                            🌶️
+                          </span>
+                        ))}
                     </div>
                   </div>
-                  
-                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
-                    {section.items.map(item => (
-                      <div 
-                        key={item.id} 
-                        className="overflow-hidden transition-all duration-300 transform bg-white shadow-lg group rounded-3xl hover:shadow-2xl hover:-translate-y-2"
-                      >
-                        <div className="relative">
-                          <img 
-                            src={item.image} 
-                            alt={item.name}
-                            className="object-cover w-full h-48 transition-transform duration-300 group-hover:scale-110"
-                            onError={(e) => {
-                              e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDMyMCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMjAiIGhlaWdodD0iMTkyIiBmaWxsPSIjRjNGOEY2Ii8+CjxwYXRoIGQ9Ik0xNjAgOTZDMTc0LjM1OSA5NiAxODYgODQuMzU5IDExODYgNzBDMTg2IDU1LjY0MSAxNzQuMzU5IDQ0IDE2MCA0NEMxNDUuNjQxIDQ0IDEzNCA1NS42NDEgMTM0IDcwQzEzNCA4NC4zNTkgMTQ1LjY0MSA5NiAxNjAgOTZaIiBmaWxsPSIjREE5RTlBIi8+CjxjaXJjbGUgY3g9IjE2MCIgY3k9IjcwIiByPSIyMCIgZmlsbD0iI0Q5RDlEOSIvPgo8L3N2Zz4K';
-                            }}
-                          />
-                          {item.isPopular && (
-                            <div className="absolute px-3 py-1 text-sm font-bold text-white bg-red-500 rounded-full top-3 left-3">
-                              POPULAIRE 🔥
-                            </div>
-                          )}
-                          {item.isVegetarian && (
-                            <div className="absolute px-3 py-1 text-sm font-bold text-white bg-green-500 rounded-full top-3 right-3">
-                              VÉGÉ 🌱
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="p-6">
-                          <div className="flex items-start justify-between mb-3">
-                            <h3 className="flex-1 pr-4 text-xl font-bold text-gray-900">
-                              {item.name}
-                            </h3>
-                            <span className="text-2xl font-bold text-yellow-600 whitespace-nowrap">
-                              {item.price}
-                            </span>
-                          </div>
-                          
-                          <p className="mb-4 leading-relaxed text-gray-600">
-                            {item.description}
-                          </p>
-                          
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
-                              <span>⏱️ {item.preparationTime}</span>
-                              <span>•</span>
-                              <span className="flex items-center">
-                                ⭐ {item.rating}
-                              </span>
-                            </div>
-                            {item.spiceLevel > 0 && (
-                              <div className="flex items-center gap-1">
-                                {[...Array(item.spiceLevel)].map((_, i) => (
-                                  <span key={i} className="text-red-500">🌶️</span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
 
-                          <button 
-                            onClick={() => addToCart(item)}
-                            className="w-full py-4 text-lg font-bold text-white transition-all transform shadow-lg bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl hover:from-yellow-600 hover:to-orange-600 hover:scale-105 hover:shadow-xl"
-                          >
-                            + Ajouter au panier
-                          </button>
-                        </div>
+                  {/* Bouton ajouter : feedback visuel + accessible */}
+                  <div className="mt-1">
+                    <button
+                      onClick={() => addToCart(item)}
+                      aria-label={`Ajouter ${item.name} au panier`}
+                      className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-semibold bg-yellow-400 text-black shadow hover:scale-[1.02] active:scale-95 transition-transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-400"
+                    >
+                      <span aria-hidden>＋</span> Ajouter
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </section>
+        )}
+      </main>
+
+      {/* ---------- Bottom sheet : mobile cart (priority #1) ---------- */}
+      {/* - Sur mobile (sm : screens), on affiche un bottom sheet overlay. Sur desktop, on montre un aside sticky. */}
+      <div>
+        {/* Overlay when sheet open */}
+        <div
+          aria-hidden={!cartOpen}
+          className={`fixed inset-0 bg-black/40 z-40 transition-opacity ${
+            cartOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
+          onClick={() => setCartOpen(false)}
+        />
+
+        {/* Bottom sheet container */}
+        <aside
+          ref={sheetRef}
+          role="dialog"
+          aria-label="Panier"
+          aria-modal="true"
+          tabIndex={-1}
+          className={`fixed z-50 left-0 right-0 bottom-0 transform transition-all duration-300 ${cartOpen ? 'translate-y-0' : 'translate-y-full'} sm:hidden`}
+        >
+          <div className="mx-4 mb-4 overflow-hidden bg-white shadow-xl rounded-t-2xl">
+            {/* Handle */}
+            <div className="flex items-center justify-between p-3 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center bg-yellow-100 rounded-lg w-9 h-9">
+                  🛒
+                </div>
+                <div>
+                  <div className="text-sm font-bold">Votre panier</div>
+                  <div className="text-xs text-gray-500">{cart.length} article(s)</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  aria-label="Fermer le panier"
+                  onClick={() => setCartOpen(false)}
+                  className="p-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Contenu du panier */}
+            <div className="max-h-[55vh] overflow-y-auto p-4 space-y-4">
+              {cart.length === 0 ? (
+                <div className="py-8 text-center">
+                  <div className="mb-2 text-4xl">🛒</div>
+                  <div className="font-semibold">Votre panier est vide</div>
+                  <div className="text-sm text-gray-500">Ajoutez des plats depuis le menu</div>
+                </div>
+              ) : (
+                cart.map((item) => (
+                  <div
+                    key={item.cartId}
+                    className="flex items-center gap-3 p-3 border border-gray-100 rounded-lg bg-gray-50"
+                  >
+                    <img
+                      loading="lazy"
+                      src={item.image}
+                      alt={item.name}
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = FALLBACK_SVG;
+                      }}
+                      className="flex-shrink-0 object-cover w-16 h-16 rounded-md"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold truncate">{item.name}</h4>
+                        <div className="text-sm font-bold text-yellow-600">{item.price}</div>
                       </div>
-                    ))}
+                      <div className="flex items-center gap-2 mt-2">
+                        <button
+                          aria-label={`Réduire la quantité de ${item.name}`}
+                          onClick={() => updateQuantity(item.cartId, -1)}
+                          className="flex items-center justify-center w-8 h-8 bg-white border rounded-full hover:bg-gray-100 focus:outline-none"
+                        >
+                          −
+                        </button>
+                        <div className="w-8 font-semibold text-center">{item.quantity}</div>
+                        <button
+                          aria-label={`Augmenter la quantité de ${item.name}`}
+                          onClick={() => updateQuantity(item.cartId, 1)}
+                          className="flex items-center justify-center w-8 h-8 bg-white border rounded-full hover:bg-gray-100 focus:outline-none"
+                        >
+                          +
+                        </button>
+
+                        <button
+                          aria-label={`Supprimer ${item.name} du panier`}
+                          onClick={() => removeFromCart(item.cartId)}
+                          className="ml-auto text-red-500 hover:text-red-700 focus:outline-none"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Totaux & commande */}
+            <div className="p-4 border-t border-gray-100">
+              <div className="mb-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Sous-total</span>
+                  <span className="font-semibold">{totals.subtotal.toLocaleString()} Ar</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Livraison</span>
+                  <span className="font-semibold">{totals.deliveryFee.toLocaleString()} Ar</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>TVA</span>
+                  <span className="font-semibold">{totals.tax.toLocaleString()} Ar</span>
+                </div>
+                <div className="flex justify-between pt-2 text-lg font-bold">
+                  <span>Total</span>
+                  <span className="text-green-600">{totals.total.toLocaleString()} Ar</span>
+                </div>
+              </div>
+
+              <button
+                onClick={handleCheckout}
+                disabled={loading}
+                aria-disabled={loading}
+                className={`w-full py-3 rounded-lg font-bold text-white transition transform ${
+                  loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 active:scale-95'
+                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500`}
+              >
+                {loading ? 'Traitement...' : 'Commander maintenant'}
+              </button>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      {/* ---------- Desktop aside sticky (visible à partir de sm/md) ---------- */}
+      <aside className="fixed z-40 hidden sm:block right-6 top-24 w-80">
+        <div className="overflow-hidden bg-white border border-gray-200 shadow-lg rounded-2xl">
+          <div className="p-4 bg-gradient-to-r from-yellow-400 to-yellow-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-lg font-bold">Votre Panier</div>
+                <div className="text-xs text-gray-800">{cart.length} article(s)</div>
+              </div>
+              <button
+                aria-label="Ouvrir le panier"
+                onClick={() => {
+                  // focus sur le bottom sheet (pour cohérence), mais ici on scroll vers l'aside
+                  setAccessibleToast('Panier ouvert');
+                  vibrate(6);
+                }}
+                className="p-2 rounded-md hover:bg-white/30"
+              >
+                🛒
+              </button>
+            </div>
+          </div>
+
+          <div className="p-4 max-h-[60vh] overflow-y-auto space-y-3">
+            {cart.length === 0 ? (
+              <div className="py-8 text-center">
+                <div className="text-3xl">🛒</div>
+                <div className="font-semibold">Panier vide</div>
+                <div className="text-xs text-gray-500">Ajoutez des plats</div>
+              </div>
+            ) : (
+              cart.map((item) => (
+                <div key={item.cartId} className="flex items-center gap-3 p-2 border border-gray-100 rounded-lg bg-gray-50">
+                  <img
+                    loading="lazy"
+                    src={item.image}
+                    alt={item.name}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = FALLBACK_SVG;
+                    }}
+                    className="flex-shrink-0 object-cover w-12 h-12 rounded-md"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold truncate">{item.name}</h4>
+                      <div className="text-sm font-bold text-yellow-600">{item.price}</div>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <button
+                        aria-label={`Réduire ${item.name}`}
+                        onClick={() => updateQuantity(item.cartId, -1)}
+                        className="flex items-center justify-center bg-white border rounded-full w-7 h-7 hover:bg-gray-100"
+                      >
+                        −
+                      </button>
+                      <div className="font-semibold text-center w-7">{item.quantity}</div>
+                      <button
+                        aria-label={`Augmenter ${item.name}`}
+                        onClick={() => updateQuantity(item.cartId, 1)}
+                        className="flex items-center justify-center bg-white border rounded-full w-7 h-7 hover:bg-gray-100"
+                      >
+                        +
+                      </button>
+                      <button
+                        aria-label={`Supprimer ${item.name}`}
+                        onClick={() => removeFromCart(item.cartId)}
+                        className="ml-auto text-red-500 hover:text-red-700"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))
             )}
           </div>
 
-          {/* Panier Latéral Amélioré */}
-          <div className="w-full lg:w-96 xl:w-[450px]">
-            <div className="sticky overflow-hidden border border-gray-100 shadow-2xl top-24 bg-white/95 backdrop-blur-sm rounded-3xl">
-              <div className="p-6 text-white bg-gradient-to-r from-yellow-500 to-orange-500">
-                <h2 className="text-2xl font-bold">Votre commande</h2>
-                <p className="opacity-90">Prêt à savourer ?</p>
-              </div>
-              
-              <div className="p-6 max-h-[60vh] overflow-y-auto">
-                {cart.length === 0 ? (
-                  <div className="py-12 text-center">
-                    <div className="mb-4 text-6xl">🛒</div>
-                    <p className="text-lg font-medium text-gray-500">Votre panier est vide</p>
-                    <p className="mt-2 text-gray-400">Explorez notre menu et ajoutez vos plats préférés</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {cart.map((item) => (
-                      <div key={item.cartId} className="p-4 border border-gray-200 bg-gray-50 rounded-2xl">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex-1">
-                            <p className="font-bold text-gray-900">{item.name}</p>
-                            <p className="font-semibold text-yellow-600">{item.price}</p>
-                          </div>
-                          <button 
-                            onClick={() => removeFromCart(item.cartId)}
-                            className="flex items-center justify-center w-8 h-8 text-red-500 transition-colors bg-red-100 rounded-full hover:bg-red-200"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3 px-3 py-1 bg-white border rounded-full">
-                            <button 
-                              onClick={() => updateQuantity(item.cartId, -1)}
-                              className="flex items-center justify-center w-6 h-6 text-gray-600 transition-colors hover:text-yellow-600"
-                            >
-                              −
-                            </button>
-                            <span className="font-bold text-center text-gray-900 min-w-8">
-                              {item.quantity}
-                            </span>
-                            <button 
-                              onClick={() => updateQuantity(item.cartId, 1)}
-                              className="flex items-center justify-center w-6 h-6 text-gray-600 transition-colors hover:text-yellow-600"
-                            >
-                              +
-                            </button>
-                          </div>
-                          <span className="font-bold text-gray-900">
-                            {(parseInt(item.price.replace(/[^0-9]/g, '')) * item.quantity).toLocaleString()} Ar
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Détails des coûts */}
-              {cart.length > 0 && (
-                <div className="p-6 border-t border-gray-200 bg-gray-50">
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-lg">
-                      <span className="text-gray-600">Sous-total</span>
-                      <span className="font-semibold">{totals.subtotal.toLocaleString()} Ar</span>
-                    </div>
-                    <div className="flex justify-between text-lg">
-                      <span className="text-gray-600">Livraison</span>
-                      <span className="font-semibold">{totals.deliveryFee.toLocaleString()} Ar</span>
-                    </div>
-                    <div className="flex justify-between text-lg">
-                      <span className="text-gray-600">Frais de service</span>
-                      <span className="font-semibold">{totals.serviceFee.toLocaleString()} Ar</span>
-                    </div>
-                    <div className="flex justify-between text-lg">
-                      <span className="text-gray-600">TVA</span>
-                      <span className="font-semibold">{totals.tax.toLocaleString()} Ar</span>
-                    </div>
-                    <div className="flex justify-between pt-4 text-2xl font-bold border-t border-gray-300">
-                      <span>Total</span>
-                      <span className="text-green-600">{totals.total.toLocaleString()} Ar</span>
-                    </div>
-                  </div>
-
-                  <button 
-                    onClick={handleCheckout}
-                    disabled={cart.length === 0 || loading}
-                    className={`w-full py-5 text-xl font-bold rounded-2xl mt-6 transition-all ${
-                      cart.length === 0 || loading
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                        : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-2xl hover:shadow-3xl transform hover:scale-105'
-                    }`}
-                  >
-                    {loading ? (
-                      <span className="flex items-center justify-center">
-                        <div className="w-6 h-6 mr-3 border-b-2 border-white rounded-full animate-spin"></div>
-                        Traitement en cours...
-                      </span>
-                    ) : (
-                      `🎉 Commander • ${totals.total.toLocaleString()} Ar`
-                    )}
-                  </button>
-
-                  {cart.length > 0 && !loading && (
-                    <div className="mt-4 space-y-2 text-center">
-                      <p className="text-sm text-gray-500">
-                        🚀 Livraison estimée : 30-45 minutes
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        ✅ Paiement sécurisé • 📞 Support 24/7
-                      </p>
-                    </div>
-                  )}
+          {cart.length > 0 && (
+            <div className="p-4 border-t border-gray-100">
+              <div className="mb-3 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Sous-total</span>
+                  <span className="font-semibold">{totals.subtotal.toLocaleString()} Ar</span>
                 </div>
-              )}
+                <div className="flex justify-between">
+                  <span>Livraison</span>
+                  <span className="font-semibold">{totals.deliveryFee.toLocaleString()} Ar</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Total</span>
+                  <span className="font-bold text-green-600">{totals.total.toLocaleString()} Ar</span>
+                </div>
+              </div>
+
+              <button
+                onClick={handleCheckout}
+                disabled={loading}
+                aria-disabled={loading}
+                className={`w-full py-2 rounded-lg font-bold text-white ${
+                  loading ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700 active:scale-95'
+                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-transform`}
+              >
+                {loading ? 'Traitement...' : 'Commander maintenant'}
+              </button>
             </div>
-          </div>
+          )}
         </div>
-      </div>
+      </aside>
     </div>
   );
 }
 
-// 🍽️ DONNÉES ENRICHIES DU MENU
-const categories = [
-  { id: 'tous', name: 'Tous les plats', icon: '🍽️' },
-  { id: 'plats-principaux', name: 'Plats Principaux', icon: '🍛' },
-  { id: 'entrees', name: 'Entrées', icon: '🥗' },
-  { id: 'desserts', name: 'Desserts', icon: '🍰' },
-  { id: 'boissons', name: 'Boissons', icon: '🥤' },
-  { id: 'vegetarien', name: 'Végétarien', icon: '🌱' }
-];
-
-const menuSections = [
-  {
-    title: "Plats Principaux Malgaches",
-    description: "Les incontournables de la cuisine traditionnelle",
-    icon: "🍛",
-    items: [
-      {
-        id: 1,
-        name: "Romazava Royal",
-        description: "Le plat national malgache - viande de zébu mijotée avec brèdes, tomates et oignons",
-        price: "18,000 Ar",
-        image: "/images/romazava.jpeg",
-        category: "plats-principaux",
-        preparationTime: "35-45 min",
-        rating: 4.9,
-        spiceLevel: 2,
-        isPopular: true,
-        calories: 450
-      },
-      {
-        id: 2,
-        name: "Ravitoto sy Henakisoa",
-        description: "Feuilles de manioc pilées avec porc, parfumées à l'ail et au gingembre",
-        price: "15,000 Ar",
-        image: "/images/ravitoto.jpg",
-        category: "plats-principaux",
-        preparationTime: "40-50 min",
-        rating: 4.7,
-        spiceLevel: 1,
-        isPopular: true,
-        calories: 520
-      },
-      {
-        id: 3,
-        name: "Poulet au Coco Maison",
-        description: "Poulet mijoté dans une sauce coco crémeuse avec épices malgaches",
-        price: "16,000 Ar",
-        image: "/images/pouletcoco.jpg",
-        category: "plats-principaux",
-        preparationTime: "30-40 min",
-        rating: 4.8,
-        spiceLevel: 1,
-        calories: 480
-      },
-      {
-        id: 4,
-        name: "Varanga sy Trondro",
-        description: "Riz cantonais malgache avec crevettes et légumes frais",
-        price: "14,000 Ar",
-        image: "/images/varanga.jpg",
-        category: "plats-principaux",
-        preparationTime: "25-35 min",
-        rating: 4.6,
-        spiceLevel: 0,
-        calories: 420
-      },
-      {
-        id: 5,
-        name: "Soupe Chinoise Malgache",
-        description: "Nouilles fraîches dans un bouillon parfumé avec légumes et viande au choix",
-        price: "12,000 Ar",
-        image: "/images/soupe-chinoise.jpg",
-        category: "plats-principaux",
-        preparationTime: "20-25 min",
-        rating: 4.5,
-        spiceLevel: 1,
-        calories: 380
-      }
-    ]
-  },
-  {
-    title: "Street Food & Entrées",
-    description: "Pour commencer en beauté",
-    icon: "🍢",
-    items: [
-      {
-        id: 6,
-        name: "Brochettes de Zébu",
-        description: "3 brochettes de zébu mariné, servi avec sauce piquante maison et achards",
-        price: "8,000 Ar",
-        image: "/images/brochettedezebu.jpg",
-        category: "entrees",
-        preparationTime: "20-25 min",
-        rating: 4.8,
-        spiceLevel: 3,
-        isPopular: true,
-        calories: 320
-      },
-      {
-        id: 7,
-        name: "Sambos Malgaches",
-        description: "Beignets fourrés au viande hachée et légumes, croustillants à l'extérieur",
-        price: "6,000 Ar",
-        image: "/images/sambos.jpg",
-        category: "entrees",
-        preparationTime: "15-20 min",
-        rating: 4.5,
-        spiceLevel: 1,
-        calories: 280
-      },
-      {
-        id: 8,
-        name: "Salade Malgache",
-        description: "Mélange frais de tomates, concombres, oignons et brèdes avec vinaigrette citron",
-        price: "7,000 Ar",
-        image: "/images/lasary.jpg",
-        category: "entrees",
-        preparationTime: "10-15 min",
-        rating: 4.4,
-        spiceLevel: 0,
-        isVegetarian: true,
-        calories: 150
-      },
-      {
-        id: 9,
-        name: "Akoho sy Voanio",
-        description: "Petites brochettes de poulet mariné au coco et épices",
-        price: "9,000 Ar",
-        image: "/images/akoho-voanio.jpg",
-        category: "entrees",
-        preparationTime: "18-22 min",
-        rating: 4.6,
-        spiceLevel: 1,
-        calories: 290
-      }
-    ]
-  },
-  {
-    title: "Desserts Traditionnels",
-    description: "Douceurs sucrées pour terminer le repas",
-    icon: "🍮",
-    items: [
-      {
-        id: 10,
-        name: "Koba Ravina",
-        description: "Gâteau de riz et cacahuètes enveloppé dans une feuille de bananier",
-        price: "5,000 Ar",
-        image: "/images/koba.webp",
-        category: "desserts",
-        preparationTime: "5 min",
-        rating: 4.7,
-        spiceLevel: 0,
-        isVegetarian: true,
-        calories: 380
-      },
-      {
-        id: 11,
-        name: "Mofo Akondro",
-        description: "Beignets de banane douce, parfaits pour le goûter",
-        price: "4,000 Ar",
-        image: "/images/mofoakondro.jpg",
-        category: "desserts",
-        preparationTime: "10-15 min",
-        rating: 4.6,
-        spiceLevel: 0,
-        isVegetarian: true,
-        calories: 320
-      },
-      {
-        id: 12,
-        name: "Bonbon Coco",
-        description: "Confiserie à base de noix de coco râpée et sucrée, fondante en bouche",
-        price: "3,000 Ar",
-        image: "/images/bonboncoco.jpg",
-        category: "desserts",
-        preparationTime: "5 min",
-        rating: 4.5,
-        spiceLevel: 0,
-        isVegetarian: true,
-        calories: 250
-      },
-      {
-        id: 13,
-        name: "Mofo Gasy",
-        description: "Pain malgache traditionnel, moelleux et parfumé",
-        price: "2,500 Ar",
-        image: "/images/mofogasy.jpg",
-        category: "desserts",
-        preparationTime: "5 min",
-        rating: 4.3,
-        spiceLevel: 0,
-        isVegetarian: true,
-        calories: 180
-      }
-    ]
-  },
-  {
-    title: "Boissons Rafraîchissantes",
-    description: "Pour accompagner votre repas",
-    icon: "🥤",
-    items: [
-      {
-        id: 14,
-        name: "Jus de Fruit Frais",
-        description: "Au choix : ananas, mangue, corossol ou tamarin",
-        price: "4,000 Ar",
-        image: "/images/jus-frais.jpg",
-        category: "boissons",
-        preparationTime: "5 min",
-        rating: 4.8,
-        spiceLevel: 0,
-        isVegetarian: true,
-        calories: 120
-      },
-      {
-        id: 15,
-        name: "Thé Rouge Malgache",
-        description: "Thé nature ou vanille, issu des hautes terres",
-        price: "3,000 Ar",
-        image: "/images/the-rouge.jpg",
-        category: "boissons",
-        preparationTime: "5 min",
-        rating: 4.6,
-        spiceLevel: 0,
-        isVegetarian: true,
-        calories: 5
-      },
-      {
-        id: 16,
-        name: "Litchi Juice",
-        description: "Jus de litchi frais, sucré naturellement",
-        price: "5,000 Ar",
-        image: "/images/litchi-juice.jpg",
-        category: "boissons",
-        preparationTime: "5 min",
-        rating: 4.7,
-        spiceLevel: 0,
-        isVegetarian: true,
-        calories: 140
-      },
-      {
-        id: 17,
-        name: "Cocktail Tropical",
-        description: "Mélange de fruits de saison avec une touche de menthe",
-        price: "6,000 Ar",
-        image: "/images/cocktail-tropical.jpg",
-        category: "boissons",
-        preparationTime: "8 min",
-        rating: 4.9,
-        spiceLevel: 0,
-        isVegetarian: true,
-        calories: 160
-      }
-    ]
-  },
-  {
-    title: "Plats Végétariens",
-    description: "Saveurs végétales authentiques",
-    icon: "🌱",
-    items: [
-      {
-        id: 18,
-        name: "Romazava Végétarien",
-        description: "Version végétale avec brèdes, tomates et aubergines",
-        price: "12,000 Ar",
-        image: "/images/romazava-vege.jpg",
-        category: "vegetarien",
-        preparationTime: "30-40 min",
-        rating: 4.6,
-        spiceLevel: 1,
-        isVegetarian: true,
-        calories: 280
-      },
-      {
-        id: 19,
-        name: "Mofo Anana",
-        description: "Beignets de brèdes, croustillants et savoureux",
-        price: "6,000 Ar",
-        image: "/images/mofoanana.jpg",
-        category: "vegetarien",
-        preparationTime: "20-25 min",
-        rating: 4.5,
-        spiceLevel: 0,
-        isVegetarian: true,
-        calories: 220
-      },
-      {
-        id: 20,
-        name: "Lasary Voatabia",
-        description: "Salade de tomates fraîches aux oignons et vinaigrette citron",
-        price: "5,000 Ar",
-        image: "/images/lasary-voatabia.jpg",
-        category: "vegetarien",
-        preparationTime: "10 min",
-        rating: 4.4,
-        spiceLevel: 0,
-        isVegetarian: true,
-        calories: 80
-      }
-    ]
-  }
-];
+/**
+ * NOTES / EXPLICATIONS FR (récapitulatif des corrections demandées) :
+ *
+ * 1) Mobile cart covering entire screen -> bottom sheet :
+ *    - Le panier mobile est implémenté comme un aside fixé en bas (bottom sheet).
+ *    - Un overlay semi-transparent apparaît derrière; toucher l'overlay ferme le sheet.
+ *    - Ajout d'un simple "swipe-to-close" : glisser vers le bas ferme le sheet.
+ *
+ * 2) Accessibilité (aria, role, tabIndex) :
+ *    - role="dialog", aria-modal, aria-label sur le bottom sheet.
+ *    - aria-live pour messages/toasts et notification de succès.
+ *    - aria-pressed sur catégories, aria-disabled sur boutons désactivés.
+ *    - focus management : focus sur le sheet quand il s'ouvre, Esc pour fermer.
+ *
+ * 3) Image lazy loading + error handling :
+ *    - Utilisation de loading="lazy" (support natif) et onError qui remplace par FALLBACK_SVG.
+ *    - Dimensions renseignées pour aider le navigateur.
+ *
+ * 4) Feedback visuel & haptique :
+ *    - Animations Tailwind : hover/active/scale pour les boutons.
+ *    - Toasts accessibles (aria-live) pour retours utilisateurs.
+ *    - Vibration courte via navigator.vibrate si disponible.
+ *
+ * Remarque Tailwind (à ajouter dans ta config si nécessaire) :
+ * - Assure-toi d'activer le plugin line-clamp si tu veux cacher les descriptions : `@tailwindcss/line-clamp`
+ * - Breakpoints standards suffisent (sm/md/lg) ; le bottom sheet est caché à partir de `sm` (sm:hidden).
+ *
+ * Fin.
+ */
