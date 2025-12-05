@@ -147,6 +147,9 @@ export default function Connecter() {
       src={cook} 
       alt="Chef malgache préparant un plat traditionnel" 
       className="object-contain w-20 h-20 mx-auto mb-4"
+      style={{
+        animation: 'moveUpDown 3s ease-in-out infinite'
+      }}
     />
 
     <h3 className="text-2xl font-semibold text-white">Découvrez les saveurs de Madagascar</h3>

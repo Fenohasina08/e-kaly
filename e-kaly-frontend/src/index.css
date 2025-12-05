@@ -70,121 +70,156 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
-@keyframes jumping-egg {
-  0%, 100% {
-    transform: translate(-50%, 0);
-  }
-  10% {
-    transform: translate(-50%, -5px);
-  }
-  20% {
-    transform: translate(-50%, -15px);
-  }
-  30% {
-    transform: translate(-50%, -30px);
-  }
-  40% {
-    transform: translate(-50%, -50px);
-  }
-  50% {
-    transform: translate(-50%, -60px);
-  }
-  60% {
-    transform: translate(-50%, -50px);
-  }
-  70% {
-    transform: translate(-50%, -30px);
-  }
-  80% {
-    transform: translate(-50%, -15px);
-  }
-  90% {
-    transform: translate(-50%, -5px);
-  }
+/* Animations personnalisées */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-@keyframes float {
-  0%, 100% { 
-    transform: translateY(0) translateX(0); 
-    opacity: 0.3;
-  }
-  33% { 
-    transform: translateY(-20px) translateX(10px); 
-    opacity: 0.5;
-  }
-  66% { 
-    transform: translateY(-10px) translateX(-5px); 
-    opacity: 0.4;
-  }
+@keyframes slideInLeft {
+  from { transform: translateX(-30px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 
-@keyframes ping-slow {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(2);
-    opacity: 0;
-  }
+@keyframes slideInRight {
+  from { transform: translateX(30px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 
-@keyframes ping-slower {
-  0% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  100% {
-    transform: scale(1.8);
-    opacity: 0;
-  }
+@keyframes slideInDown {
+  from { transform: translateY(-30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
-@keyframes ping-slowest {
-  0% {
-    transform: scale(1);
-    opacity: 0.6;
-  }
-  100% {
-    transform: scale(1.6);
-    opacity: 0;
-  }
+@keyframes slideInUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
-.animate-jumping-egg {
-  animation: jumping-egg 2s ease-in-out infinite;
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-.animate-ping-slow {
-  animation: ping-slow 1.5s ease-out infinite;
-}
-
-.animate-ping-slower {
-  animation: ping-slower 2s ease-out infinite;
-}
-
-.animate-ping-slowest {
-  animation: ping-slowest 2.5s ease-out infinite;
+@keyframes typewriter {
+  from { width: 0; }
+  to { width: 100%; }
 }
 
 @keyframes bounce-slow {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-15px); }
+  50% { transform: translateY(-20px); }
 }
 
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+@keyframes float {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  33% { transform: translateY(-20px) translateX(10px); }
+  66% { transform: translateY(-10px) translateX(-5px); }
+}
+
+@keyframes steam {
+  0% { transform: translateY(0) scale(1); opacity: 0; }
+  20% { opacity: 0.5; }
+  50% { transform: translateY(-100px) scale(1.2); opacity: 0.2; }
+  80% { opacity: 0.1; }
+  100% { transform: translateY(-200px) scale(1.5); opacity: 0; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes ping-slow {
+  0% { transform: scale(1); opacity: 0.8; }
+  70%, 100% { transform: scale(2); opacity: 0; }
+}
+
+@keyframes staggeredFade {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Classes d'animation */
+.animate-fadeIn {
+  animation: fadeIn 1s ease-out;
+}
+
+.animate-slideInLeft {
+  animation: slideInLeft 0.8s ease-out;
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.8s ease-out;
+}
+
+.animate-slideInDown {
+  animation: slideInDown 0.8s ease-out;
+}
+
+.animate-slideInUp {
+  animation: slideInUp 0.8s ease-out;
+}
+
+.animate-slideIn {
+  animation: slideIn 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-typewriter {
+  animation: typewriter 1.5s steps(40) 0.5s 1 normal both;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .animate-bounce-slow {
   animation: bounce-slow 3s ease-in-out infinite;
 }
 
-.animate-spin-slow {
-  animation: spin-slow 8s linear infinite;
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-steam {
+  animation: steam 4s ease-out infinite;
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s ease-in-out infinite;
+}
+
+.animate-ping-slow {
+  animation: ping-slow 2s ease-out infinite;
+}
+
+.animate-staggeredFade > * {
+  animation: staggeredFade 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+/* Pour les animations avec délai */
+.animate-delay-100 { animation-delay: 0.1s; }
+.animate-delay-200 { animation-delay: 0.2s; }
+.animate-delay-300 { animation-delay: 0.3s; }
+.animate-delay-400 { animation-delay: 0.4s; }
+.animate-delay-500 { animation-delay: 0.5s; }
+.animate-delay-600 { animation-delay: 0.6s; }
+
+@keyframes moveUpDown {
+  0%, 100% {
+    transform: translateY(0) scale(1.02);
+  }
+  50% {
+    transform: translateY(-15px) scale(1.02);
+  }
 }
