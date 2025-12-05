@@ -130,8 +130,8 @@ export default function Connecter() {
             <path d="M7 12c2 1.5 4 1.5 6 0" stroke="#FFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
 
-          <h3 className="text-2xl font-semibold text-orange-800">Inspirez votre cuisine</h3>
-          <p className="mt-2 text-gray-700">Accédez à vos recettes, listes et favoris depuis un seul endroit.</p>
+          <h3 className="text-2xl font-semibold text-orange-800"> Découvrez les saveurs de Madagascar</h3>
+          <p className="mt-2 text-gray-700"> Connectez-vous pour explorer nos plats traditionnels et commander en quelques clics.</p>
         </div>
         {/* Subtle animated steam */}
         <div className="absolute w-32 h-32 pointer-events-none bottom-10 right-10 opacity-60">
