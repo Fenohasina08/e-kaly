@@ -9,7 +9,7 @@ export default function Header() {
             <h1 className="text-2xl font-bold text-black ">e‑Kaly</h1>
 
             <ul className="hidden gap-8 font-medium text-gray-700 ml-60 md:flex">
-              <li className="transition-colors cursor-pointer hover:text-yellow-500">Accueil</li>
+              <li className="transition-colors cursor-pointer hover:text-yellow-500"><Link to="/" className='no-underline text-inherit'>Accueil</Link></li>
               <li className="transition-colors cursor-pointer hover:text-yellow-500"><Link to="/commander" className="no-underline text-inherit">Recettes</Link></li> 
               <li className="transition-colors cursor-pointer hover:text-yellow-500">Contacts</li>
             </ul>
