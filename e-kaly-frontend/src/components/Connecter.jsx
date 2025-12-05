@@ -1,9 +1,9 @@
  import React, { useEffect, useRef, useState } from "react";
-
+import sauce from "../../public/images/sauce.jpg";
 // Redesign du composant Connecter — React + Tailwind
 // Usage: coller ce fichier dans src/components/Connecter.jsx
 // Dépendances: TailwindCSS configuré dans le projet
-
+import cook from "../../public/images/cooking_11997721.png"
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 const MAX_ATTEMPTS = 5;
@@ -121,23 +121,43 @@ export default function Connecter() {
   return (
     <div className="flex flex-col min-h-screen w-[100vw] md:flex-row bg-gradient-to-b from-white to-amber-50">
       {/* LEFT: illustration légère */}
-      <aside className="relative items-center justify-center hidden overflow-hidden md:flex md:w-1/2 bg-gradient-to-br from-amber-100 to-orange-50">
-        {/* Overlay image ou illustration vectorielle */}
-        <div className="absolute inset-0 bg-[url('/images/kitchen-texture.jpg')] bg-cover bg-center opacity-40" />
-        <div className="relative z-10 max-w-xs p-8 text-center">
-          <svg width="84" height="84" viewBox="0 0 24 24" fill="none" aria-hidden className="mx-auto mb-4">
-            <rect width="24" height="24" rx="6" fill="#F59E0B" />
-            <path d="M7 12c2 1.5 4 1.5 6 0" stroke="#FFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+      <aside className="relative items-center justify-center hidden overflow-hidden md:flex md:w-1/2">
+  {/* Image de fond principale */}
+  <div 
+    className="absolute inset-0"
+    style={{
+      backgroundImage: `url(${sauce})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      filter: 'blur(2px)',
+      transform: 'scale(1.02)'
+    }}
+  ></div>
+  
+  {/* Texture de cuisine en overlay */}
+  <div className="absolute inset-0 bg-[url('/images/kitchen-texture.jpg')] bg-cover bg-center opacity-40" />
+  
+  {/* Overlay sombre pour améliorer la lisibilité */}
+  <div className="absolute inset-0 bg-black bg-opacity-50"></div>
+  
+  {/* Contenu texte */}
+  <div className="relative z-10 max-w-xs p-8 text-center">
+     <img 
+      src={cook} 
+      alt="Chef malgache préparant un plat traditionnel" 
+      className="object-contain w-20 h-20 mx-auto mb-4"
+    />
 
-          <h3 className="text-2xl font-semibold text-orange-800"> Découvrez les saveurs de Madagascar</h3>
-          <p className="mt-2 text-gray-700"> Connectez-vous pour explorer nos plats traditionnels et commander en quelques clics.</p>
-        </div>
-        {/* Subtle animated steam */}
-        <div className="absolute w-32 h-32 pointer-events-none bottom-10 right-10 opacity-60">
-          <div className="w-full h-full rounded-full animate-[float_6s_ease-in-out_infinite] bg-gradient-to-t from-white/20 to-transparent" />
-        </div>
-      </aside>
+    <h3 className="text-2xl font-semibold text-white">Découvrez les saveurs de Madagascar</h3>
+    <p className="mt-2 text-gray-100">Connectez-vous pour explorer nos plats traditionnels et commander en quelques clics.</p>
+  </div>
+  
+  {/* Vapeur animée subtile */}
+  <div className="absolute w-32 h-32 pointer-events-none bottom-10 right-10 opacity-60">
+    <div className="w-full h-full rounded-full animate-[float_6s_ease-in-out_infinite] bg-gradient-to-t from-white/20 to-transparent" />
+  </div>
+</aside>
 
       {/* RIGHT: Form */}
       <main className="flex items-center justify-center flex-1 p-6">
